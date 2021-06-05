@@ -61,6 +61,67 @@ app.put("/api/v1/bin", async (req, res) => {
       } else {
         res.status(400).send("Not a valid location id");
       }
+
+      if (bin?.category === "BIG") {
+        const taskNotExist = (
+          await firestore
+            .collection("task")
+            .where("locationID", "==", bin?.locationID)
+            .get()
+        ).empty;
+
+        if (taskNotExist) {
+          const average = await getBinAverage(bin?.locationID);
+          const user =
+            (
+              await firestore
+                .collection("user")
+                .doc(location?.data()?.generatorID)
+                .get()
+            ).data() || {};
+
+          const recycler = (
+            await firestore
+              .collection("user")
+              .where("role", "==", "RECYCLER")
+              .get()
+          ).docs[0].data();
+
+          const { fullnessNotice, businessName, contactNo, id, operatingHour } =
+            user;
+          if (average > fullnessNotice) {
+            const taskId = uuidv4();
+            const taskDate = dayjs()
+              .add(1, "day")
+              .set("hour", 3)
+              .set("minute", 0)
+              .set("second", 0);
+            const newTask = {
+              id: taskId,
+              locationID: bin?.locationID || "",
+              createdDate: dayjs().toDate(),
+              dateTime: taskDate.toDate(),
+              updatedBy: "GENERATOR",
+              generator: {
+                businessName,
+                contactNo,
+                operatingHour,
+                id,
+              },
+              recycler: {
+                businessName: recycler.businessName,
+                contactNo: recycler.contactNo,
+                operatingHour: recycler.operatingHour,
+                id: recycler.id,
+              },
+              status: "DRAFT",
+            };
+
+            await firestore.collection("task").doc(taskId).set(newTask);
+          }
+        }
+      }
+      res.status(200).send("Update successfully");
     } else {
       await firestore.collection("bin").doc(id).set({
         category,
@@ -71,67 +132,8 @@ app.put("/api/v1/bin", async (req, res) => {
         updatedDate,
       });
 
-      res.status(200).send("Bin created successfull");
+      res.status(200).send("Bin created successful");
     }
-
-    if (bin?.category === "BIG") {
-      const taskExist = (
-        await firestore
-          .collection("task")
-          .where("locationID", "==", locationID)
-          .get()
-      ).empty;
-      if (taskExist) {
-        const average = await getBinAverage(bin?.locationID);
-        const user =
-          (
-            await firestore
-              .collection("user")
-              .doc(location?.data()?.generatorID)
-              .get()
-          ).data() || {};
-
-        const recycler = (
-          await firestore
-            .collection("user")
-            .where("role", "==", "RECYCLER")
-            .get()
-        ).docs[0].data();
-
-        const { fullnessNotice, businessName, contactNo, id, operatingHour } = user;
-        if (average > fullnessNotice) {
-          const taskId = uuidv4();
-          const taskDate = dayjs()
-            .add(1, "day")
-            .set("hour", 11)
-            .set("minute", 0)
-            .set("second", 0);
-          const newTask = {
-            id: taskId,
-            locationID: bin?.locationID || "",
-            createdDate: dayjs().toDate(),
-            dateTime: taskDate.toDate(),
-            updatedBy: "GENERATOR",
-            generator: {
-              businessName,
-              contactNo,
-              operatingHour,
-              id,
-            },
-            recycler: {
-              businessName: recycler.businessName,
-              contactNo: recycler.contactNo,
-              operatingHour: recycler.operatingHour,
-              id: recycler.id,
-            },
-            status: "DRAFT",
-          };
-
-          await firestore.collection("task").doc(taskId).set(newTask);
-        }
-      }
-    }
-    res.status(200).send("Update successfully");
   } catch (error) {
     console.log(error);
     res.status(400).send(error);
