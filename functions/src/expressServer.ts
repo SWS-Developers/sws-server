@@ -136,7 +136,7 @@ app.put("/api/v1/bin", async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    res.status(400).send(error);
+    res.status(400).send("An Error Occured");
   }
 });
 
