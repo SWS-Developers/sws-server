@@ -42,9 +42,9 @@ app.post("/noti", async (req, res) => {
     const data = req.body;
     const response = await sendNotification(data);
 
-    res.status(response.status).send(response.data);
+    res.status(response.status).send("Notification sent!");
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send(`Error: ${error}`);
   }
 });
 
