@@ -3,6 +3,7 @@ import * as express from "express";
 import * as admin from "firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import * as dayjs from "dayjs";
+import { sendNotification } from "./sendNotification";
 
 admin.initializeApp(functions.config().firebase);
 
@@ -35,6 +36,17 @@ const getBinAverage = async (locationID: string) => {
     throw new Error(error);
   }
 };
+
+app.post("/noti", async (req, res) => {
+  try {
+    const data = req.body;
+    const response = await sendNotification(data);
+
+    res.status(response.status).send(response.data);
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
 
 app.put("/api/v1/bin", async (req, res) => {
   try {
@@ -87,8 +99,14 @@ app.put("/api/v1/bin", async (req, res) => {
               .get()
           ).docs[0].data();
 
-          const { fullnessNotice, businessName, contactNo, id, operatingHour } =
-            user;
+          const {
+            fullnessNotice,
+            businessName,
+            contactNo,
+            id,
+            operatingHour,
+            fcmToken,
+          } = user;
           if (average > fullnessNotice) {
             const taskId = uuidv4();
             const taskDate = dayjs()
@@ -117,6 +135,10 @@ app.put("/api/v1/bin", async (req, res) => {
               status: "DRAFT",
             };
 
+            await sendNotification({
+              to: [fcmToken],
+              title: "We have created a new task!",
+            });
             await firestore.collection("task").doc(taskId).set(newTask);
           }
         }

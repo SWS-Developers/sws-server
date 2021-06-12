@@ -15,6 +15,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "@types/uuid": "^8.3.0",
+    "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "dayjs": "^1.10.5",
     "express": "^4.17.1",
