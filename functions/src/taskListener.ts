@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { v4 as uuidv4 } from "uuid";
+import { sendNotification } from "./sendNotification";
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 
@@ -15,6 +16,13 @@ exports.taskListener = functions.firestore
 
       if (newValue.status === "REJECTED" || newValue.status === "CANCELED") {
         const prevRecycler = prev.recycler.id;
+        const generatorId = prev.generator.id;
+
+        const generator = (
+          await firestore.collection("user").doc(generatorId).get()
+        ).data();
+        const { fcmToken } = generator || {};
+
         const recycler = (
           await firestore
             .collection("user")
@@ -39,9 +47,17 @@ exports.taskListener = functions.firestore
             contactNo: recycler.contactNo,
             operatingHour: recycler.operatingHour,
             id: recycler.id,
+            fcmToken: recycler.fcmToken,
           },
           status: "DRAFT",
         };
+
+        await sendNotification({
+          to: [fcmToken],
+          title: "Task Rescheduled",
+          body: "Your task has been Rejected/Cancelled by the recycler.\nWe have scheduled a new recycler!",
+        });
+
         return await firestore.collection("task").doc(id).set(newTask);
       }
 
