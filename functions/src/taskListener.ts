@@ -47,6 +47,7 @@ exports.taskListener = functions.firestore
             contactNo: recycler.contactNo,
             operatingHour: recycler.operatingHour,
             id: recycler.id,
+            fcmToken: recycler.fcmToken,
           },
           status: "DRAFT",
         };

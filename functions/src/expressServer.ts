@@ -125,12 +125,14 @@ app.put("/api/v1/bin", async (req, res) => {
                 contactNo,
                 operatingHour,
                 id,
+                fcmToken,
               },
               recycler: {
                 businessName: recycler.businessName,
                 contactNo: recycler.contactNo,
                 operatingHour: recycler.operatingHour,
                 id: recycler.id,
+                fcmToken: recycler.fcmToken,
               },
               status: "DRAFT",
             };
